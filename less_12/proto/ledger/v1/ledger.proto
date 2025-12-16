@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package ledger.v1;
+
+option go_package = "ledger/v1;ledgerv1";
+
+import "google/protobuf/empty.proto";
+
+message Transaction {
+  int64 id = 1;
+  string category = 2;
+  double amount = 3;
+  string description = 4;
+  string date = 5;
+}
+
+message Budget {
+  string category = 1;
+  double limit = 2;
+}
+
+message CreateTransactionRequest {
+  Transaction transaction = 1;
+}
+
+message CreateBudgetRequest {
+  Budget budget = 1;
+}
+
+message ListTransactionsResponse {
+  repeated Transaction transactions = 1;
+}
+
+message ListBudgetsResponse {
+  repeated Budget budgets = 1;
+}
+
+message ReportSummaryRequest {
+  string from = 1;
+  string to = 2;
+}
+
+message ReportSummaryResponse {
+  map<string, double> totals = 1;
+}
+
+service LedgerService {
+  rpc AddTransaction(CreateTransactionRequest) returns (Transaction);
+  rpc ListTransactions(google.protobuf.Empty) returns (ListTransactionsResponse);
+  rpc SetBudget(CreateBudgetRequest) returns (Budget);
+  rpc ListBudgets(google.protobuf.Empty) returns (ListBudgetsResponse);
+  rpc GetReportSummary(ReportSummaryRequest) returns (ReportSummaryResponse);
+}

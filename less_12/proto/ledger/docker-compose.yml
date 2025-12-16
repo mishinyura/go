@@ -1,0 +1,24 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: cashapp
+
+  ledger:
+    build: ./ledger
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      GRPC_PORT: 50051
+    depends_on:
+      - db
+
+  gateway:
+    build: ./gateway
+    environment:
+      LEDGER_ADDR: ledger:50051
+    ports:
+      - "8080:8080"
+    depends_on:
+      - ledger
