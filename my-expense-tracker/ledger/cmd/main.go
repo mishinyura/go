@@ -22,19 +22,19 @@ type server struct {
 }
 
 func (s *server) CreateTransaction(ctx context.Context, req *pb.TransactionRequest) (*pb.TransactionResponse, error) {
-	// ШАГ 1: Проверяем, есть ли бюджет на эту категорию
 	var limit float64
 	err := s.db.QueryRow("SELECT limit_amount FROM budgets WHERE user_id = $1 AND category = $2", req.UserId, req.Category).Scan(&limit)
 
 	if err == nil {
 		var currentSpent float64
-
 		s.db.QueryRow("SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE user_id = $1 AND category = $2", req.UserId, req.Category).Scan(&currentSpent)
 
 		if currentSpent+req.Amount > limit {
+			msg := fmt.Sprintf("Бюджет превышен! Лимит: %.0f, Уже потрачено: %.0f. Нельзя добавить %.0f", limit, currentSpent, req.Amount)
+			log.Println(msg)
 			return &pb.TransactionResponse{
 				Success: false,
-				Message: fmt.Sprintf("ПРЕВЫШЕНИЕ БЮДЖЕТА! Лимит: %.0f, Потрачено: %.0f, Вы хотите: %.0f", limit, currentSpent, req.Amount),
+				Message: msg,
 			}, nil
 		}
 	}
@@ -52,6 +52,32 @@ func (s *server) CreateTransaction(ctx context.Context, req *pb.TransactionReque
 	return &pb.TransactionResponse{Success: true, Message: "Saved"}, nil
 }
 
+func (s *server) GetReport(ctx context.Context, req *pb.ReportRequest) (*pb.ReportResponse, error) {
+	if data, _ := s.cache.GetReport(ctx, req.UserId); data != nil {
+		log.Println("Report Cache HIT")
+		return &pb.ReportResponse{ByCategory: data}, nil
+	}
+
+	log.Println("🔍 Report Cache MISS")
+	rows, err := s.db.Query("SELECT category, SUM(amount) FROM transactions WHERE user_id = $1 GROUP BY category", req.UserId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	report := make(map[string]float64)
+	for rows.Next() {
+		var cat string
+		var sum float64
+		rows.Scan(&cat, &sum)
+		report[cat] = sum
+	}
+
+	go s.cache.SetReport(context.Background(), req.UserId, report)
+
+	return &pb.ReportResponse{ByCategory: report}, nil
+}
+
 func (s *server) SetBudget(ctx context.Context, req *pb.BudgetRequest) (*pb.BudgetResponse, error) {
 	_, err := s.db.Exec(`
 		INSERT INTO budgets (user_id, category, limit_amount) 
@@ -60,7 +86,6 @@ func (s *server) SetBudget(ctx context.Context, req *pb.BudgetRequest) (*pb.Budg
 		req.UserId, req.Category, req.LimitAmount)
 
 	if err != nil {
-		log.Printf("Error setting budget: %v", err)
 		return &pb.BudgetResponse{Success: false, Message: "DB Error"}, nil
 	}
 
@@ -75,7 +100,7 @@ func (s *server) GetBudgets(ctx context.Context, req *pb.GetBudgetsRequest) (*pb
 		return &pb.BudgetList{Budgets: cached}, nil
 	}
 
-	log.Println("Budgets Cache MISS")
+	log.Println("🔍 Budgets Cache MISS")
 	rows, err := s.db.Query("SELECT category, limit_amount FROM budgets WHERE user_id = $1", req.UserId)
 	if err != nil {
 		return nil, err
@@ -110,16 +135,8 @@ func main() {
 	db.Exec(`CREATE TABLE IF NOT EXISTS transactions (
 		id SERIAL PRIMARY KEY, user_id INT, amount FLOAT, category TEXT, description TEXT, created_at TIMESTAMP DEFAULT NOW())`)
 
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS budgets (
-		id SERIAL PRIMARY KEY, 
-		user_id INT, 
-		category TEXT, 
-		limit_amount FLOAT,
-		UNIQUE(user_id, category) 
-	)`)
-	if err != nil {
-		log.Fatal(err)
-	}
+	db.Exec(`CREATE TABLE IF NOT EXISTS budgets (
+		id SERIAL PRIMARY KEY, user_id INT, category TEXT, limit_amount FLOAT, UNIQUE(user_id, category))`)
 
 	redisAddr := os.Getenv("REDIS_ADDR")
 	if redisAddr == "" {
