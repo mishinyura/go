@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: ledger
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    container_name: cashcraft-redis
+
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth-service
+      - ledger-service
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: auth/Dockerfile
+    environment:
+      JWT_SECRET: "supersecret"
+    ports:
+      - "50051:50051"
+
+  ledger-service:
+    build:
+      context: .
+      dockerfile: ledger/Dockerfile
+    environment:
+      REDIS_ADDR: "redis:6379"
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "50052:50052"

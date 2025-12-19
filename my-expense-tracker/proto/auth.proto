@@ -1,0 +1,28 @@
+syntax = "proto3";
+package auth;
+option go_package = "github.com/yuramishin/expense-tracker/proto/pb_auth";
+
+service AuthService {
+  rpc Register (AuthRequest) returns (AuthResponse);
+  rpc Login (AuthRequest) returns (AuthResponse);
+  rpc Validate (ValidateRequest) returns (ValidateResponse);
+}
+
+message AuthRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message AuthResponse {
+  string token = 1;
+  string error = 2;
+}
+
+message ValidateRequest {
+  string token = 1;
+}
+
+message ValidateResponse {
+  int64 user_id = 1;
+  bool valid = 2;
+}

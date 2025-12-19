@@ -1,0 +1,29 @@
+syntax = "proto3";
+package ledger;
+option go_package = "github.com/yuramishin/expense-tracker/proto/pb_ledger";
+
+service LedgerService {
+  rpc CreateTransaction (TransactionRequest) returns (TransactionResponse);
+  rpc GetReport (ReportRequest) returns (ReportResponse);
+}
+
+message TransactionRequest {
+  int64 user_id = 1;
+  double amount = 2;
+  string category = 3;
+  string description = 4;
+}
+
+message TransactionResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message ReportRequest {
+  int64 user_id = 1;
+}
+
+message ReportResponse {
+  double total_spend = 1;
+  map<string, double> by_category = 2;
+}
