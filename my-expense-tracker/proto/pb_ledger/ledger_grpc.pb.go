@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.0
 // - protoc             v6.33.2
-// source: ledger.proto
+// source: proto/ledger.proto
 
 package pb_ledger
 
@@ -19,8 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	LedgerService_CreateTransaction_FullMethodName = "/ledger.LedgerService/CreateTransaction"
-	LedgerService_GetReport_FullMethodName         = "/ledger.LedgerService/GetReport"
+	LedgerService_CreateTransaction_FullMethodName = "/pb_ledger.LedgerService/CreateTransaction"
+	LedgerService_GetReport_FullMethodName         = "/pb_ledger.LedgerService/GetReport"
+	LedgerService_SetBudget_FullMethodName         = "/pb_ledger.LedgerService/SetBudget"
+	LedgerService_GetBudgets_FullMethodName        = "/pb_ledger.LedgerService/GetBudgets"
 )
 
 // LedgerServiceClient is the client API for LedgerService service.
@@ -29,6 +31,9 @@ const (
 type LedgerServiceClient interface {
 	CreateTransaction(ctx context.Context, in *TransactionRequest, opts ...grpc.CallOption) (*TransactionResponse, error)
 	GetReport(ctx context.Context, in *ReportRequest, opts ...grpc.CallOption) (*ReportResponse, error)
+	// === НОВЫЕ МЕТОДЫ ДЛЯ БЮДЖЕТОВ ===
+	SetBudget(ctx context.Context, in *BudgetRequest, opts ...grpc.CallOption) (*BudgetResponse, error)
+	GetBudgets(ctx context.Context, in *GetBudgetsRequest, opts ...grpc.CallOption) (*BudgetList, error)
 }
 
 type ledgerServiceClient struct {
@@ -59,12 +64,35 @@ func (c *ledgerServiceClient) GetReport(ctx context.Context, in *ReportRequest, 
 	return out, nil
 }
 
+func (c *ledgerServiceClient) SetBudget(ctx context.Context, in *BudgetRequest, opts ...grpc.CallOption) (*BudgetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BudgetResponse)
+	err := c.cc.Invoke(ctx, LedgerService_SetBudget_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *ledgerServiceClient) GetBudgets(ctx context.Context, in *GetBudgetsRequest, opts ...grpc.CallOption) (*BudgetList, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BudgetList)
+	err := c.cc.Invoke(ctx, LedgerService_GetBudgets_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LedgerServiceServer is the server API for LedgerService service.
 // All implementations must embed UnimplementedLedgerServiceServer
 // for forward compatibility.
 type LedgerServiceServer interface {
 	CreateTransaction(context.Context, *TransactionRequest) (*TransactionResponse, error)
 	GetReport(context.Context, *ReportRequest) (*ReportResponse, error)
+	// === НОВЫЕ МЕТОДЫ ДЛЯ БЮДЖЕТОВ ===
+	SetBudget(context.Context, *BudgetRequest) (*BudgetResponse, error)
+	GetBudgets(context.Context, *GetBudgetsRequest) (*BudgetList, error)
 	mustEmbedUnimplementedLedgerServiceServer()
 }
 
@@ -80,6 +108,12 @@ func (UnimplementedLedgerServiceServer) CreateTransaction(context.Context, *Tran
 }
 func (UnimplementedLedgerServiceServer) GetReport(context.Context, *ReportRequest) (*ReportResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetReport not implemented")
+}
+func (UnimplementedLedgerServiceServer) SetBudget(context.Context, *BudgetRequest) (*BudgetResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetBudget not implemented")
+}
+func (UnimplementedLedgerServiceServer) GetBudgets(context.Context, *GetBudgetsRequest) (*BudgetList, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetBudgets not implemented")
 }
 func (UnimplementedLedgerServiceServer) mustEmbedUnimplementedLedgerServiceServer() {}
 func (UnimplementedLedgerServiceServer) testEmbeddedByValue()                       {}
@@ -138,11 +172,47 @@ func _LedgerService_GetReport_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LedgerService_SetBudget_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BudgetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LedgerServiceServer).SetBudget(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LedgerService_SetBudget_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LedgerServiceServer).SetBudget(ctx, req.(*BudgetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LedgerService_GetBudgets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBudgetsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LedgerServiceServer).GetBudgets(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LedgerService_GetBudgets_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LedgerServiceServer).GetBudgets(ctx, req.(*GetBudgetsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LedgerService_ServiceDesc is the grpc.ServiceDesc for LedgerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var LedgerService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "ledger.LedgerService",
+	ServiceName: "pb_ledger.LedgerService",
 	HandlerType: (*LedgerServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -153,7 +223,15 @@ var LedgerService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "GetReport",
 			Handler:    _LedgerService_GetReport_Handler,
 		},
+		{
+			MethodName: "SetBudget",
+			Handler:    _LedgerService_SetBudget_Handler,
+		},
+		{
+			MethodName: "GetBudgets",
+			Handler:    _LedgerService_GetBudgets_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "ledger.proto",
+	Metadata: "proto/ledger.proto",
 }

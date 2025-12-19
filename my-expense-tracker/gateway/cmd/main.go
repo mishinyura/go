@@ -32,6 +32,8 @@ func main() {
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/transaction", transactionHandler)
 	http.HandleFunc("/report", reportHandler)
+	http.HandleFunc("/set_budget", setBudgetHandler)
+	http.HandleFunc("/get_budgets", getBudgetsHandler)
 
 	log.Println("Gateway running on :8080")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
@@ -125,6 +127,46 @@ func reportHandler(w http.ResponseWriter, r *http.Request) {
 	resp, err := ledgerClient.GetReport(context.Background(), req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
+func setBudgetHandler(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+	valResp, err := authClient.Validate(context.Background(), &pb_auth.ValidateRequest{Token: token})
+	if err != nil || !valResp.Valid {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var req pb_ledger.BudgetRequest
+	json.NewDecoder(r.Body).Decode(&req)
+	req.UserId = valResp.UserId
+
+	resp, err := ledgerClient.SetBudget(context.Background(), &req)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
+func getBudgetsHandler(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+	valResp, err := authClient.Validate(context.Background(), &pb_auth.ValidateRequest{Token: token})
+	if err != nil || !valResp.Valid {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	resp, err := ledgerClient.GetBudgets(context.Background(), &pb_ledger.GetBudgetsRequest{UserId: valResp.UserId})
+	if err != nil {
+		http.Error(w, err.Error(), 500)
 		return
 	}
 

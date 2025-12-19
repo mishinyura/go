@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -21,7 +22,24 @@ type server struct {
 }
 
 func (s *server) CreateTransaction(ctx context.Context, req *pb.TransactionRequest) (*pb.TransactionResponse, error) {
-	_, err := s.db.Exec("INSERT INTO transactions (user_id, amount, category, description) VALUES ($1, $2, $3, $4)",
+	// ШАГ 1: Проверяем, есть ли бюджет на эту категорию
+	var limit float64
+	err := s.db.QueryRow("SELECT limit_amount FROM budgets WHERE user_id = $1 AND category = $2", req.UserId, req.Category).Scan(&limit)
+
+	if err == nil {
+		var currentSpent float64
+
+		s.db.QueryRow("SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE user_id = $1 AND category = $2", req.UserId, req.Category).Scan(&currentSpent)
+
+		if currentSpent+req.Amount > limit {
+			return &pb.TransactionResponse{
+				Success: false,
+				Message: fmt.Sprintf("ПРЕВЫШЕНИЕ БЮДЖЕТА! Лимит: %.0f, Потрачено: %.0f, Вы хотите: %.0f", limit, currentSpent, req.Amount),
+			}, nil
+		}
+	}
+
+	_, err = s.db.Exec("INSERT INTO transactions (user_id, amount, category, description) VALUES ($1, $2, $3, $4)",
 		req.UserId, req.Amount, req.Category, req.Description)
 
 	if err != nil {
@@ -29,36 +47,51 @@ func (s *server) CreateTransaction(ctx context.Context, req *pb.TransactionReque
 		return &pb.TransactionResponse{Success: false, Message: "Database error"}, nil
 	}
 
+	go s.cache.SetReport(context.Background(), req.UserId, nil)
+
 	return &pb.TransactionResponse{Success: true, Message: "Saved"}, nil
 }
 
-func (s *server) GetReport(ctx context.Context, req *pb.ReportRequest) (*pb.ReportResponse, error) {
-	if data, _ := s.cache.GetReport(ctx, req.UserId); data != nil {
-		log.Println("🚀 Cache HIT (from Redis)")
-		return &pb.ReportResponse{ByCategory: data}, nil
+func (s *server) SetBudget(ctx context.Context, req *pb.BudgetRequest) (*pb.BudgetResponse, error) {
+	_, err := s.db.Exec(`
+		INSERT INTO budgets (user_id, category, limit_amount) 
+		VALUES ($1, $2, $3)
+		ON CONFLICT (user_id, category) DO UPDATE SET limit_amount = $3`,
+		req.UserId, req.Category, req.LimitAmount)
+
+	if err != nil {
+		log.Printf("Error setting budget: %v", err)
+		return &pb.BudgetResponse{Success: false, Message: "DB Error"}, nil
 	}
 
-	log.Println("🔍 Cache MISS (calculating from DB...)")
-	rows, err := s.db.Query("SELECT category, SUM(amount) FROM transactions WHERE user_id = $1 GROUP BY category", req.UserId)
+	go s.cache.InvalidateBudgets(context.Background(), req.UserId)
+
+	return &pb.BudgetResponse{Success: true, Message: "Budget Set"}, nil
+}
+
+func (s *server) GetBudgets(ctx context.Context, req *pb.GetBudgetsRequest) (*pb.BudgetList, error) {
+	if cached, _ := s.cache.GetBudgets(ctx, req.UserId); cached != nil {
+		log.Println("Budgets Cache HIT")
+		return &pb.BudgetList{Budgets: cached}, nil
+	}
+
+	log.Println("Budgets Cache MISS")
+	rows, err := s.db.Query("SELECT category, limit_amount FROM budgets WHERE user_id = $1", req.UserId)
 	if err != nil {
-		log.Printf("Error querying report: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
 
-	report := make(map[string]float64)
+	var list []*pb.Budget
 	for rows.Next() {
-		var cat string
-		var sum float64
-		if err := rows.Scan(&cat, &sum); err != nil {
-			continue
-		}
-		report[cat] = sum
+		b := &pb.Budget{}
+		rows.Scan(&b.Category, &b.LimitAmount)
+		list = append(list, b)
 	}
 
-	go s.cache.SetReport(context.Background(), req.UserId, report)
+	go s.cache.SetBudgets(context.Background(), req.UserId, list)
 
-	return &pb.ReportResponse{ByCategory: report}, nil
+	return &pb.BudgetList{Budgets: list}, nil
 }
 
 func main() {
@@ -71,41 +104,33 @@ func main() {
 		if err := db.Ping(); err == nil {
 			break
 		}
-		log.Println("Waiting for database...")
 		time.Sleep(2 * time.Second)
 	}
 
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS transactions (
-		id SERIAL PRIMARY KEY,
-		user_id INT,
-		amount FLOAT,
-		category TEXT,
-		description TEXT,
-		created_at TIMESTAMP DEFAULT NOW()
+	db.Exec(`CREATE TABLE IF NOT EXISTS transactions (
+		id SERIAL PRIMARY KEY, user_id INT, amount FLOAT, category TEXT, description TEXT, created_at TIMESTAMP DEFAULT NOW())`)
+
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS budgets (
+		id SERIAL PRIMARY KEY, 
+		user_id INT, 
+		category TEXT, 
+		limit_amount FLOAT,
+		UNIQUE(user_id, category) 
 	)`)
 	if err != nil {
-		log.Fatalf("Failed to create table: %v", err)
+		log.Fatal(err)
 	}
-	log.Println("Database table ensured")
 
 	redisAddr := os.Getenv("REDIS_ADDR")
 	if redisAddr == "" {
 		redisAddr = "localhost:6379"
 	}
-	redisClient, err := cache.NewRedisClient(redisAddr)
-	if err != nil {
-		log.Printf("Redis connection failed: %v", err)
-	}
+	redisClient, _ := cache.NewRedisClient(redisAddr)
 
-	lis, err := net.Listen("tcp", ":50052")
-	if err != nil {
-		log.Fatal(err)
-	}
+	lis, _ := net.Listen("tcp", ":50052")
 	s := grpc.NewServer()
 	pb.RegisterLedgerServiceServer(s, &server{db: db, cache: redisClient})
 
 	log.Println("Ledger Service running on :50052")
-	if err := s.Serve(lis); err != nil {
-		log.Fatal(err)
-	}
+	s.Serve(lis)
 }

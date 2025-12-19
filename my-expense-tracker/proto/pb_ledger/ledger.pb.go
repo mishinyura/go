@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v6.33.2
-// source: ledger.proto
+// source: proto/ledger.proto
 
 package pb_ledger
 
@@ -33,7 +33,7 @@ type TransactionRequest struct {
 
 func (x *TransactionRequest) Reset() {
 	*x = TransactionRequest{}
-	mi := &file_ledger_proto_msgTypes[0]
+	mi := &file_proto_ledger_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45,7 +45,7 @@ func (x *TransactionRequest) String() string {
 func (*TransactionRequest) ProtoMessage() {}
 
 func (x *TransactionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ledger_proto_msgTypes[0]
+	mi := &file_proto_ledger_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +58,7 @@ func (x *TransactionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TransactionRequest.ProtoReflect.Descriptor instead.
 func (*TransactionRequest) Descriptor() ([]byte, []int) {
-	return file_ledger_proto_rawDescGZIP(), []int{0}
+	return file_proto_ledger_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *TransactionRequest) GetUserId() int64 {
@@ -99,7 +99,7 @@ type TransactionResponse struct {
 
 func (x *TransactionResponse) Reset() {
 	*x = TransactionResponse{}
-	mi := &file_ledger_proto_msgTypes[1]
+	mi := &file_proto_ledger_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -111,7 +111,7 @@ func (x *TransactionResponse) String() string {
 func (*TransactionResponse) ProtoMessage() {}
 
 func (x *TransactionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ledger_proto_msgTypes[1]
+	mi := &file_proto_ledger_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -124,7 +124,7 @@ func (x *TransactionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TransactionResponse.ProtoReflect.Descriptor instead.
 func (*TransactionResponse) Descriptor() ([]byte, []int) {
-	return file_ledger_proto_rawDescGZIP(), []int{1}
+	return file_proto_ledger_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *TransactionResponse) GetSuccess() bool {
@@ -150,7 +150,7 @@ type ReportRequest struct {
 
 func (x *ReportRequest) Reset() {
 	*x = ReportRequest{}
-	mi := &file_ledger_proto_msgTypes[2]
+	mi := &file_proto_ledger_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -162,7 +162,7 @@ func (x *ReportRequest) String() string {
 func (*ReportRequest) ProtoMessage() {}
 
 func (x *ReportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ledger_proto_msgTypes[2]
+	mi := &file_proto_ledger_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -175,7 +175,7 @@ func (x *ReportRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportRequest.ProtoReflect.Descriptor instead.
 func (*ReportRequest) Descriptor() ([]byte, []int) {
-	return file_ledger_proto_rawDescGZIP(), []int{2}
+	return file_proto_ledger_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ReportRequest) GetUserId() int64 {
@@ -195,7 +195,7 @@ type ReportResponse struct {
 
 func (x *ReportResponse) Reset() {
 	*x = ReportResponse{}
-	mi := &file_ledger_proto_msgTypes[3]
+	mi := &file_proto_ledger_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -207,7 +207,7 @@ func (x *ReportResponse) String() string {
 func (*ReportResponse) ProtoMessage() {}
 
 func (x *ReportResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ledger_proto_msgTypes[3]
+	mi := &file_proto_ledger_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -220,7 +220,7 @@ func (x *ReportResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportResponse.ProtoReflect.Descriptor instead.
 func (*ReportResponse) Descriptor() ([]byte, []int) {
-	return file_ledger_proto_rawDescGZIP(), []int{3}
+	return file_proto_ledger_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ReportResponse) GetTotalSpend() float64 {
@@ -237,11 +237,264 @@ func (x *ReportResponse) GetByCategory() map[string]float64 {
 	return nil
 }
 
-var File_ledger_proto protoreflect.FileDescriptor
+// === НОВЫЕ СООБЩЕНИЯ ===
+type BudgetRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Category      string                 `protobuf:"bytes,2,opt,name=category,proto3" json:"category,omitempty"`
+	LimitAmount   float64                `protobuf:"fixed64,3,opt,name=limit_amount,json=limitAmount,proto3" json:"limit_amount,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
 
-const file_ledger_proto_rawDesc = "" +
+func (x *BudgetRequest) Reset() {
+	*x = BudgetRequest{}
+	mi := &file_proto_ledger_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BudgetRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BudgetRequest) ProtoMessage() {}
+
+func (x *BudgetRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_ledger_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BudgetRequest.ProtoReflect.Descriptor instead.
+func (*BudgetRequest) Descriptor() ([]byte, []int) {
+	return file_proto_ledger_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *BudgetRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *BudgetRequest) GetCategory() string {
+	if x != nil {
+		return x.Category
+	}
+	return ""
+}
+
+func (x *BudgetRequest) GetLimitAmount() float64 {
+	if x != nil {
+		return x.LimitAmount
+	}
+	return 0
+}
+
+type BudgetResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BudgetResponse) Reset() {
+	*x = BudgetResponse{}
+	mi := &file_proto_ledger_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BudgetResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BudgetResponse) ProtoMessage() {}
+
+func (x *BudgetResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_ledger_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BudgetResponse.ProtoReflect.Descriptor instead.
+func (*BudgetResponse) Descriptor() ([]byte, []int) {
+	return file_proto_ledger_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *BudgetResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *BudgetResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type GetBudgetsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetBudgetsRequest) Reset() {
+	*x = GetBudgetsRequest{}
+	mi := &file_proto_ledger_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetBudgetsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetBudgetsRequest) ProtoMessage() {}
+
+func (x *GetBudgetsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_ledger_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetBudgetsRequest.ProtoReflect.Descriptor instead.
+func (*GetBudgetsRequest) Descriptor() ([]byte, []int) {
+	return file_proto_ledger_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *GetBudgetsRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+type Budget struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Category      string                 `protobuf:"bytes,1,opt,name=category,proto3" json:"category,omitempty"`
+	LimitAmount   float64                `protobuf:"fixed64,2,opt,name=limit_amount,json=limitAmount,proto3" json:"limit_amount,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Budget) Reset() {
+	*x = Budget{}
+	mi := &file_proto_ledger_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Budget) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Budget) ProtoMessage() {}
+
+func (x *Budget) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_ledger_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Budget.ProtoReflect.Descriptor instead.
+func (*Budget) Descriptor() ([]byte, []int) {
+	return file_proto_ledger_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *Budget) GetCategory() string {
+	if x != nil {
+		return x.Category
+	}
+	return ""
+}
+
+func (x *Budget) GetLimitAmount() float64 {
+	if x != nil {
+		return x.LimitAmount
+	}
+	return 0
+}
+
+type BudgetList struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Budgets       []*Budget              `protobuf:"bytes,1,rep,name=budgets,proto3" json:"budgets,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BudgetList) Reset() {
+	*x = BudgetList{}
+	mi := &file_proto_ledger_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BudgetList) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BudgetList) ProtoMessage() {}
+
+func (x *BudgetList) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_ledger_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BudgetList.ProtoReflect.Descriptor instead.
+func (*BudgetList) Descriptor() ([]byte, []int) {
+	return file_proto_ledger_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *BudgetList) GetBudgets() []*Budget {
+	if x != nil {
+		return x.Budgets
+	}
+	return nil
+}
+
+var File_proto_ledger_proto protoreflect.FileDescriptor
+
+const file_proto_ledger_proto_rawDesc = "" +
 	"\n" +
-	"\fledger.proto\x12\x06ledger\"\x83\x01\n" +
+	"\x12proto/ledger.proto\x12\tpb_ledger\"\x83\x01\n" +
 	"\x12TransactionRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x16\n" +
 	"\x06amount\x18\x02 \x01(\x01R\x06amount\x12\x1a\n" +
@@ -251,72 +504,100 @@ const file_ledger_proto_rawDesc = "" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"(\n" +
 	"\rReportRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\"\xb9\x01\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\"\xbc\x01\n" +
 	"\x0eReportResponse\x12\x1f\n" +
 	"\vtotal_spend\x18\x01 \x01(\x01R\n" +
-	"totalSpend\x12G\n" +
-	"\vby_category\x18\x02 \x03(\v2&.ledger.ReportResponse.ByCategoryEntryR\n" +
+	"totalSpend\x12J\n" +
+	"\vby_category\x18\x02 \x03(\v2).pb_ledger.ReportResponse.ByCategoryEntryR\n" +
 	"byCategory\x1a=\n" +
 	"\x0fByCategoryEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x01R\x05value:\x028\x012\x99\x01\n" +
-	"\rLedgerService\x12L\n" +
-	"\x11CreateTransaction\x12\x1a.ledger.TransactionRequest\x1a\x1b.ledger.TransactionResponse\x12:\n" +
-	"\tGetReport\x12\x15.ledger.ReportRequest\x1a\x16.ledger.ReportResponseB7Z5github.com/yuramishin/expense-tracker/proto/pb_ledgerb\x06proto3"
+	"\x05value\x18\x02 \x01(\x01R\x05value:\x028\x01\"g\n" +
+	"\rBudgetRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x1a\n" +
+	"\bcategory\x18\x02 \x01(\tR\bcategory\x12!\n" +
+	"\flimit_amount\x18\x03 \x01(\x01R\vlimitAmount\"D\n" +
+	"\x0eBudgetResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\",\n" +
+	"\x11GetBudgetsRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\"G\n" +
+	"\x06Budget\x12\x1a\n" +
+	"\bcategory\x18\x01 \x01(\tR\bcategory\x12!\n" +
+	"\flimit_amount\x18\x02 \x01(\x01R\vlimitAmount\"9\n" +
+	"\n" +
+	"BudgetList\x12+\n" +
+	"\abudgets\x18\x01 \x03(\v2\x11.pb_ledger.BudgetR\abudgets2\xaa\x02\n" +
+	"\rLedgerService\x12R\n" +
+	"\x11CreateTransaction\x12\x1d.pb_ledger.TransactionRequest\x1a\x1e.pb_ledger.TransactionResponse\x12@\n" +
+	"\tGetReport\x12\x18.pb_ledger.ReportRequest\x1a\x19.pb_ledger.ReportResponse\x12@\n" +
+	"\tSetBudget\x12\x18.pb_ledger.BudgetRequest\x1a\x19.pb_ledger.BudgetResponse\x12A\n" +
+	"\n" +
+	"GetBudgets\x12\x1c.pb_ledger.GetBudgetsRequest\x1a\x15.pb_ledger.BudgetListB\x13Z\x11./proto/pb_ledgerb\x06proto3"
 
 var (
-	file_ledger_proto_rawDescOnce sync.Once
-	file_ledger_proto_rawDescData []byte
+	file_proto_ledger_proto_rawDescOnce sync.Once
+	file_proto_ledger_proto_rawDescData []byte
 )
 
-func file_ledger_proto_rawDescGZIP() []byte {
-	file_ledger_proto_rawDescOnce.Do(func() {
-		file_ledger_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_ledger_proto_rawDesc), len(file_ledger_proto_rawDesc)))
+func file_proto_ledger_proto_rawDescGZIP() []byte {
+	file_proto_ledger_proto_rawDescOnce.Do(func() {
+		file_proto_ledger_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_ledger_proto_rawDesc), len(file_proto_ledger_proto_rawDesc)))
 	})
-	return file_ledger_proto_rawDescData
+	return file_proto_ledger_proto_rawDescData
 }
 
-var file_ledger_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
-var file_ledger_proto_goTypes = []any{
-	(*TransactionRequest)(nil),  // 0: ledger.TransactionRequest
-	(*TransactionResponse)(nil), // 1: ledger.TransactionResponse
-	(*ReportRequest)(nil),       // 2: ledger.ReportRequest
-	(*ReportResponse)(nil),      // 3: ledger.ReportResponse
-	nil,                         // 4: ledger.ReportResponse.ByCategoryEntry
+var file_proto_ledger_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_proto_ledger_proto_goTypes = []any{
+	(*TransactionRequest)(nil),  // 0: pb_ledger.TransactionRequest
+	(*TransactionResponse)(nil), // 1: pb_ledger.TransactionResponse
+	(*ReportRequest)(nil),       // 2: pb_ledger.ReportRequest
+	(*ReportResponse)(nil),      // 3: pb_ledger.ReportResponse
+	(*BudgetRequest)(nil),       // 4: pb_ledger.BudgetRequest
+	(*BudgetResponse)(nil),      // 5: pb_ledger.BudgetResponse
+	(*GetBudgetsRequest)(nil),   // 6: pb_ledger.GetBudgetsRequest
+	(*Budget)(nil),              // 7: pb_ledger.Budget
+	(*BudgetList)(nil),          // 8: pb_ledger.BudgetList
+	nil,                         // 9: pb_ledger.ReportResponse.ByCategoryEntry
 }
-var file_ledger_proto_depIdxs = []int32{
-	4, // 0: ledger.ReportResponse.by_category:type_name -> ledger.ReportResponse.ByCategoryEntry
-	0, // 1: ledger.LedgerService.CreateTransaction:input_type -> ledger.TransactionRequest
-	2, // 2: ledger.LedgerService.GetReport:input_type -> ledger.ReportRequest
-	1, // 3: ledger.LedgerService.CreateTransaction:output_type -> ledger.TransactionResponse
-	3, // 4: ledger.LedgerService.GetReport:output_type -> ledger.ReportResponse
-	3, // [3:5] is the sub-list for method output_type
-	1, // [1:3] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+var file_proto_ledger_proto_depIdxs = []int32{
+	9, // 0: pb_ledger.ReportResponse.by_category:type_name -> pb_ledger.ReportResponse.ByCategoryEntry
+	7, // 1: pb_ledger.BudgetList.budgets:type_name -> pb_ledger.Budget
+	0, // 2: pb_ledger.LedgerService.CreateTransaction:input_type -> pb_ledger.TransactionRequest
+	2, // 3: pb_ledger.LedgerService.GetReport:input_type -> pb_ledger.ReportRequest
+	4, // 4: pb_ledger.LedgerService.SetBudget:input_type -> pb_ledger.BudgetRequest
+	6, // 5: pb_ledger.LedgerService.GetBudgets:input_type -> pb_ledger.GetBudgetsRequest
+	1, // 6: pb_ledger.LedgerService.CreateTransaction:output_type -> pb_ledger.TransactionResponse
+	3, // 7: pb_ledger.LedgerService.GetReport:output_type -> pb_ledger.ReportResponse
+	5, // 8: pb_ledger.LedgerService.SetBudget:output_type -> pb_ledger.BudgetResponse
+	8, // 9: pb_ledger.LedgerService.GetBudgets:output_type -> pb_ledger.BudgetList
+	6, // [6:10] is the sub-list for method output_type
+	2, // [2:6] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_ledger_proto_init() }
-func file_ledger_proto_init() {
-	if File_ledger_proto != nil {
+func init() { file_proto_ledger_proto_init() }
+func file_proto_ledger_proto_init() {
+	if File_proto_ledger_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ledger_proto_rawDesc), len(file_ledger_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_ledger_proto_rawDesc), len(file_proto_ledger_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_ledger_proto_goTypes,
-		DependencyIndexes: file_ledger_proto_depIdxs,
-		MessageInfos:      file_ledger_proto_msgTypes,
+		GoTypes:           file_proto_ledger_proto_goTypes,
+		DependencyIndexes: file_proto_ledger_proto_depIdxs,
+		MessageInfos:      file_proto_ledger_proto_msgTypes,
 	}.Build()
-	File_ledger_proto = out.File
-	file_ledger_proto_goTypes = nil
-	file_ledger_proto_depIdxs = nil
+	File_proto_ledger_proto = out.File
+	file_proto_ledger_proto_goTypes = nil
+	file_proto_ledger_proto_depIdxs = nil
 }

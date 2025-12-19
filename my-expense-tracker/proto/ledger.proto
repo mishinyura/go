@@ -1,10 +1,16 @@
 syntax = "proto3";
-package ledger;
-option go_package = "github.com/yuramishin/expense-tracker/proto/pb_ledger";
+
+package pb_ledger;
+
+option go_package = "./proto/pb_ledger";
 
 service LedgerService {
   rpc CreateTransaction (TransactionRequest) returns (TransactionResponse);
   rpc GetReport (ReportRequest) returns (ReportResponse);
+
+  // === НОВЫЕ МЕТОДЫ ДЛЯ БЮДЖЕТОВ ===
+  rpc SetBudget (BudgetRequest) returns (BudgetResponse);
+  rpc GetBudgets (GetBudgetsRequest) returns (BudgetList);
 }
 
 message TransactionRequest {
@@ -26,4 +32,29 @@ message ReportRequest {
 message ReportResponse {
   double total_spend = 1;
   map<string, double> by_category = 2;
+}
+
+// === НОВЫЕ СООБЩЕНИЯ ===
+message BudgetRequest {
+  int64 user_id = 1;
+  string category = 2;
+  double limit_amount = 3;
+}
+
+message BudgetResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetBudgetsRequest {
+  int64 user_id = 1;
+}
+
+message Budget {
+  string category = 1;
+  double limit_amount = 2;
+}
+
+message BudgetList {
+  repeated Budget budgets = 1;
 }
