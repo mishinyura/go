@@ -58,7 +58,7 @@ func (s *server) GetReport(ctx context.Context, req *pb.ReportRequest) (*pb.Repo
 		return &pb.ReportResponse{ByCategory: data}, nil
 	}
 
-	log.Println("🔍 Report Cache MISS")
+	log.Println("Report Cache MISS")
 	rows, err := s.db.Query("SELECT category, SUM(amount) FROM transactions WHERE user_id = $1 GROUP BY category", req.UserId)
 	if err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func (s *server) GetBudgets(ctx context.Context, req *pb.GetBudgetsRequest) (*pb
 		return &pb.BudgetList{Budgets: cached}, nil
 	}
 
-	log.Println("🔍 Budgets Cache MISS")
+	log.Println("Budgets Cache MISS")
 	rows, err := s.db.Query("SELECT category, limit_amount FROM budgets WHERE user_id = $1", req.UserId)
 	if err != nil {
 		return nil, err

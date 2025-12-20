@@ -82,18 +82,15 @@ function sendTransaction() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   const ui = SpreadsheetApp.getUi();
   
-  // Берем активную строку (где стоит курсор)
   const row = sheet.getActiveCell().getRow();
   
   const token = PropertiesService.getScriptProperties().getProperty('JWT_TOKEN');
   if (!token) { ui.alert("Сначала войдите в систему!"); return; }
 
-  // Читаем данные
   const amount = sheet.getRange(row, 1).getValue();
   const category = sheet.getRange(row, 2).getValue();
   const desc = sheet.getRange(row, 3).getValue();
 
-  // Проверка на пустоту
   if (amount === "" || category === "") {
     ui.alert("Заполните Сумму и Категорию!");
     return;
@@ -120,31 +117,24 @@ function sendTransaction() {
     const response = UrlFetchApp.fetch(BASE_URL + "/transaction", options);
     const textResponse = response.getContentText();
     
-    // Пытаемся понять, что ответил сервер
     let json;
     try {
       json = JSON.parse(textResponse);
     } catch (e) {
-      // Если сервер вернул не JSON, а ошибку html
       sheet.getRange(row, 4).setValue("Ошибка сети");
       return;
     }
 
     const cellStatus = sheet.getRange(row, 4);
 
-    // === ГЛАВНАЯ ПРОВЕРКА ===
     if (json.success === true) {
-       // Всё ок
        cellStatus.setValue("Сохранено");
        cellStatus.setFontColor("green");
     } else {
-       // Сервер вернул ошибку (Бюджет превышен!)
-       // Пишем текст ошибки в ячейку
        cellStatus.setValue(json.message); 
        cellStatus.setFontColor("red");
-       cellStatus.setWrap(true); // Чтобы длинный текст влез
+       cellStatus.setWrap(true);
        
-       // Дополнительно покажем всплывающее окно, чтобы точно заметил
        ui.alert("ОТКАЗ: " + json.message);
     }
 
