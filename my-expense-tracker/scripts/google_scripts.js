@@ -3,13 +3,14 @@ const BASE_URL = "https://nonadministrant-continuately-tamekia.ngrok-free.dev";
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu('Трекинг')
-    .addItem('1. Регистрация', 'registerUser')
-    .addItem('2. Войти', 'loginUser')
-    .addItem('3. Отправить строку', 'sendTransaction')
+    .addItem('Регистрация', 'registerUser')
+    .addItem('Войти', 'loginUser')
+    .addItem('Отправить строку', 'sendTransaction')
+    .addItem('Выйти', 'logoutUser')
     .addSeparator()
-    .addItem('4. Получить отчет', 'getReport')
-    .addItem('5. Установить бюджет', 'setBudget')
-    .addItem('6. Получить бюджет', 'getBudgets')
+    .addItem('Получить отчет', 'getReport')
+    .addItem('Установить бюджет', 'setBudget')
+    .addItem('Получить бюджет', 'getBudgets')
     .addToUi();
 }
 
@@ -156,7 +157,7 @@ function getReport() {
     'method': 'get',
     'headers': {
       'Authorization': token,
-      'ngrok-skip-browser-warning': 'true' // <--- МАГИЧЕСКАЯ СТРОЧКА
+      'ngrok-skip-browser-warning': 'true'
     },
     'muteHttpExceptions': true
   };
@@ -234,4 +235,25 @@ function getBudgets() {
     msg += "Нет бюджетов";
   }
   ui.alert(msg);
+}
+
+function logoutUser() {
+  const ui = SpreadsheetApp.getUi();
+  const token = PropertiesService.getScriptProperties().getProperty('JWT_TOKEN');
+  if (!token) { ui.alert("Вы и так не вошли."); return; }
+
+  const options = {
+    'method': 'post',
+    'headers': { 'Authorization': token, 'ngrok-skip-browser-warning': 'true' }
+  };
+  
+  try {
+    UrlFetchApp.fetch(BASE_URL + "/logout", options);
+    
+    PropertiesService.getScriptProperties().deleteProperty('JWT_TOKEN');
+    
+    ui.alert("Вы успешно вышли. Старый токен больше не сработает.");
+  } catch (e) {
+    ui.alert("Ошибка выхода: " + e.message);
+  }
 }

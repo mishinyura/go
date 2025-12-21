@@ -32,6 +32,9 @@ services:
       dockerfile: auth/Dockerfile
     environment:
       JWT_SECRET: "supersecret"
+      REDIS_ADDR: "redis:6379"
+    depends_on:
+      - redis
     ports:
       - "50051:50051"
 

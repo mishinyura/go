@@ -2,15 +2,17 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"time"
 
+	"database/sql"
+
 	"github.com/golang-jwt/jwt/v5"
 	_ "github.com/lib/pq"
+	"github.com/redis/go-redis/v9"
 	pb "github.com/yuramishin/expense-tracker/proto/pb_auth"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
@@ -20,140 +22,94 @@ var jwtKey = []byte(os.Getenv("JWT_SECRET"))
 
 type server struct {
 	pb.UnimplementedAuthServiceServer
-	db *sql.DB
+	db    *sql.DB
+	redis *redis.Client
 }
 
-func hashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-	return string(bytes), err
-}
-
-func checkPasswordHash(password, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	return err == nil
-}
-
-func generateToken(userID int64, email string) (string, error) {
-	if len(jwtKey) == 0 {
-		jwtKey = []byte("default_secret_key") // Заглушка, если ENV не задан
-	}
-
-	claims := jwt.MapClaims{
-		"user_id": userID,
-		"email":   email,
-		"exp":     time.Now().Add(time.Hour * 24).Unix(), // Токен живет 24 часа
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtKey)
-}
-
-func (s *server) Register(ctx context.Context, req *pb.AuthRequest) (*pb.AuthResponse, error) {
-	hashedPass, err := hashPassword(req.Password)
-	if err != nil {
-		return &pb.AuthResponse{Error: "Failed to hash password"}, nil
-	}
-
+func (s *server) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
+	hashedPass, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	var userID int64
-	err = s.db.QueryRow("INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id",
-		req.Email, hashedPass).Scan(&userID)
+	err := s.db.QueryRow("INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id",
+		req.Email, string(hashedPass)).Scan(&userID)
 
 	if err != nil {
-		return &pb.AuthResponse{Error: "User already exists or database error"}, nil
+		return nil, fmt.Errorf("could not register user: %v", err)
 	}
-
-	token, err := generateToken(userID, req.Email)
-	if err != nil {
-		return &pb.AuthResponse{Error: "Failed to generate token"}, nil
-	}
-
-	return &pb.AuthResponse{Token: token}, nil
+	return &pb.RegisterResponse{UserId: userID}, nil
 }
 
-func (s *server) Login(ctx context.Context, req *pb.AuthRequest) (*pb.AuthResponse, error) {
-	var userID int64
+func (s *server) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
+	var id int64
 	var hash string
-
-	err := s.db.QueryRow("SELECT id, password_hash FROM users WHERE email = $1", req.Email).Scan(&userID, &hash)
-	if err == sql.ErrNoRows {
-		return &pb.AuthResponse{Error: "User not found"}, nil
-	} else if err != nil {
-		return &pb.AuthResponse{Error: "Database error"}, nil
-	}
-
-	if !checkPasswordHash(req.Password, hash) {
-		return &pb.AuthResponse{Error: "Invalid credentials"}, nil
-	}
-
-	token, err := generateToken(userID, req.Email)
+	err := s.db.QueryRow("SELECT id, password_hash FROM users WHERE email = $1", req.Email).Scan(&id, &hash)
 	if err != nil {
-		return &pb.AuthResponse{Error: "Failed to generate token"}, nil
+		return nil, fmt.Errorf("user not found")
 	}
 
-	return &pb.AuthResponse{Token: token}, nil
+	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(req.Password)); err != nil {
+		return nil, fmt.Errorf("wrong password")
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": id,
+		"exp":     time.Now().Add(24 * time.Hour).Unix(),
+	})
+	tokenString, _ := token.SignedString(jwtKey)
+
+	return &pb.LoginResponse{Token: tokenString}, nil
 }
 
 func (s *server) Validate(ctx context.Context, req *pb.ValidateRequest) (*pb.ValidateResponse, error) {
-	if len(jwtKey) == 0 {
-		jwtKey = []byte("default_secret_key")
-	}
-
-	token, err := jwt.Parse(req.Token, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method")
-		}
-		return jwtKey, nil
-	})
-
-	if err != nil {
+	exists, _ := s.redis.Exists(ctx, "blacklist:"+req.Token).Result()
+	if exists > 0 {
 		return &pb.ValidateResponse{Valid: false}, nil
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		userID := int64(claims["user_id"].(float64))
-		return &pb.ValidateResponse{Valid: true, UserId: userID}, nil
+	token, err := jwt.Parse(req.Token, func(token *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+
+	if err != nil || !token.Valid {
+		return &pb.ValidateResponse{Valid: false}, nil
 	}
 
-	return &pb.ValidateResponse{Valid: false}, nil
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return &pb.ValidateResponse{Valid: false}, nil
+	}
+
+	return &pb.ValidateResponse{
+		Valid:  true,
+		UserId: int64(claims["user_id"].(float64)),
+	}, nil
+}
+
+func (s *server) Logout(ctx context.Context, req *pb.LogoutRequest) (*pb.LogoutResponse, error) {
+	err := s.redis.Set(ctx, "blacklist:"+req.Token, "revoked", 24*time.Hour).Err()
+	if err != nil {
+		return &pb.LogoutResponse{Success: false}, err
+	}
+	return &pb.LogoutResponse{Success: true}, nil
 }
 
 func main() {
-	connStr := "postgres://user:pass@postgres:5432/ledger?sslmode=disable"
-	db, err := sql.Open("postgres", connStr)
+	db, err := sql.Open("postgres", "postgres://user:pass@postgres:5432/ledger?sslmode=disable")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for i := 0; i < 10; i++ {
-		if err := db.Ping(); err == nil {
-			break
-		}
-		log.Println("Waiting for database...")
-		time.Sleep(2 * time.Second)
-	}
+	db.Exec(`CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, email TEXT UNIQUE, password_hash TEXT)`)
 
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS users (
-			id SERIAL PRIMARY KEY,
-			email TEXT UNIQUE NOT NULL,
-			password_hash TEXT NOT NULL,
-			created_at TIMESTAMP DEFAULT NOW()
-		)
-	`)
-	if err != nil {
-		log.Fatal("Failed to create users table:", err)
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
 	}
+	rdb := redis.NewClient(&redis.Options{Addr: redisAddr})
 
-	lis, err := net.Listen("tcp", ":50051")
-	if err != nil {
-		log.Fatal("Failed to listen:", err)
-	}
+	lis, _ := net.Listen("tcp", ":50051")
+	grpcServer := grpc.NewServer()
+	pb.RegisterAuthServiceServer(grpcServer, &server{db: db, redis: rdb})
 
-	s := grpc.NewServer()
-	pb.RegisterAuthServiceServer(s, &server{db: db})
-
-	log.Println("Auth Service running on :50051")
-	if err := s.Serve(lis); err != nil {
-		log.Fatal("Failed to serve:", err)
-	}
+	log.Println("Auth Service running on :50051 with Redis Blacklist")
+	grpcServer.Serve(lis)
 }
