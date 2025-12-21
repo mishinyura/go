@@ -7,8 +7,6 @@ option go_package = "./proto/pb_ledger";
 service LedgerService {
   rpc CreateTransaction (TransactionRequest) returns (TransactionResponse);
   rpc GetReport (ReportRequest) returns (ReportResponse);
-
-  // === НОВЫЕ МЕТОДЫ ДЛЯ БЮДЖЕТОВ ===
   rpc SetBudget (BudgetRequest) returns (BudgetResponse);
   rpc GetBudgets (GetBudgetsRequest) returns (BudgetList);
 }
@@ -34,7 +32,6 @@ message ReportResponse {
   map<string, double> by_category = 2;
 }
 
-// === НОВЫЕ СООБЩЕНИЯ ===
 message BudgetRequest {
   int64 user_id = 1;
   string category = 2;
