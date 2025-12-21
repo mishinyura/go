@@ -22,6 +22,10 @@ type server struct {
 }
 
 func (s *server) CreateTransaction(ctx context.Context, req *pb.TransactionRequest) (*pb.TransactionResponse, error) {
+	if err := ValidateTransaction(req.Amount, req.Category); err != nil {
+		return &pb.TransactionResponse{Success: false, Message: "Validation Error: " + err.Error()}, nil
+	}
+
 	var limit float64
 	err := s.db.QueryRow("SELECT limit_amount FROM budgets WHERE user_id = $1 AND category = $2", req.UserId, req.Category).Scan(&limit)
 
