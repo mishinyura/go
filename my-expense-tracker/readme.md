@@ -28,10 +28,6 @@ expense-tracker/
 │
 ├── gateway/                 # API Gateway (REST -> gRPC)
 │   ├── cmd/                 # Точка входа (main.go)
-│   └── internal/
-│       ├── handler/         # HTTP-хендлеры (принимают JSON от Google Sheets)
-│       ├── middleware/      # Проверка JWT токенов
-│       └── client/          # gRPC-клиенты для общения с Auth и Ledger
 │
 ├── auth/                    # Микросервис Аутентификации
 │   ├── cmd/                 # Точка входа
@@ -42,12 +38,15 @@ expense-tracker/
 │       ├── service/         # Бизнес-логика (хеширование паролей, генерация токенов)
 │       └── handler/         # gRPC-сервер (реализация интерфейса из proto)
 │
-└── ledger/                  # Микросервис Учета (Основная логика)
-    ├── cmd/                 # Точка входа
-    └── internal/
-        ├── repository/      # SQL-запросы к транзакциям и бюджетам
-        ├── service/         # Логика проверки лимитов, агрегация отчетов
-        └── handler/         # gRPC-сервер
+├── ledger/                  # Микросервис Учета (Основная логика)
+|   ├── cmd/                 # Точка входа
+|   └── internal/
+|       ├── repository/      # SQL-запросы к транзакциям и бюджетам
+|       ├── service/         # Логика проверки лимитов, агрегация отчетов
+|       └── handler/         # gRPC-сервер
+|
+├── scripts/
+|   ├── google_scripts.js/   # Скрипт для Google Apps Script
 ```
 
 ### Способы запуска
