@@ -50,7 +50,11 @@ func (s *AuthService) Login(email, password string) (string, error) {
 }
 
 func (s *AuthService) Validate(ctx context.Context, tokenStr string) (int64, bool) {
-	if s.redis.IsBlacklisted(ctx, tokenStr) {
+	isBlacklisted, err := s.redis.IsBlacklisted(ctx, tokenStr)
+	if err != nil {
+		return 0, false
+	}
+	if isBlacklisted {
 		return 0, false
 	}
 

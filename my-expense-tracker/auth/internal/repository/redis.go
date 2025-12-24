@@ -19,7 +19,10 @@ func (r *RedisRepo) AddToBlacklist(ctx context.Context, token string, expiration
 	return r.client.Set(ctx, "blacklist:"+token, "revoked", expiration).Err()
 }
 
-func (r *RedisRepo) IsBlacklisted(ctx context.Context, token string) bool {
-	exists, _ := r.client.Exists(ctx, "blacklist:"+token).Result()
-	return exists > 0
+func (r *RedisRepo) IsBlacklisted(ctx context.Context, token string) (bool, error) {
+	exists, err := r.client.Exists(ctx, "blacklist:"+token).Result()
+	if err != nil {
+		return false, err
+	}
+	return exists > 0, nil
 }

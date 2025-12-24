@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -21,37 +22,55 @@ func NewRedisRepo(client *redis.Client) *RedisRepo {
 func (r *RedisRepo) GetReport(ctx context.Context, userID int64) (map[string]float64, error) {
 	val, err := r.client.Get(ctx, fmt.Sprintf("report:%d", userID)).Result()
 	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return nil, nil
+		}
 		return nil, err
 	}
+
 	var data map[string]float64
-	json.Unmarshal([]byte(val), &data)
+	if err := json.Unmarshal([]byte(val), &data); err != nil {
+		return nil, fmt.Errorf("cache deserialization error: %w", err)
+	}
 	return data, nil
 }
 
-func (r *RedisRepo) SetReport(ctx context.Context, userID int64, data map[string]float64) {
-	bytes, _ := json.Marshal(data)
-	r.client.Set(ctx, fmt.Sprintf("report:%d", userID), bytes, 30*time.Second)
+func (r *RedisRepo) SetReport(ctx context.Context, userID int64, data map[string]float64) error {
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	return r.client.Set(ctx, fmt.Sprintf("report:%d", userID), bytes, 30*time.Second).Err()
 }
 
-func (r *RedisRepo) InvalidateReport(ctx context.Context, userID int64) {
-	r.client.Del(ctx, fmt.Sprintf("report:%d", userID))
+func (r *RedisRepo) InvalidateReport(ctx context.Context, userID int64) error {
+	return r.client.Del(ctx, fmt.Sprintf("report:%d", userID)).Err()
 }
 
 func (r *RedisRepo) GetBudgets(ctx context.Context, userID int64) ([]*domain.Budget, error) {
 	val, err := r.client.Get(ctx, fmt.Sprintf("budgets:%d", userID)).Result()
 	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return nil, nil
+		}
 		return nil, err
 	}
+
 	var budgets []*domain.Budget
-	json.Unmarshal([]byte(val), &budgets)
+	if err := json.Unmarshal([]byte(val), &budgets); err != nil {
+		return nil, fmt.Errorf("cache deserialization error: %w", err)
+	}
 	return budgets, nil
 }
 
-func (r *RedisRepo) SetBudgets(ctx context.Context, userID int64, list []*domain.Budget) {
-	bytes, _ := json.Marshal(list)
-	r.client.Set(ctx, fmt.Sprintf("budgets:%d", userID), bytes, 30*time.Second)
+func (r *RedisRepo) SetBudgets(ctx context.Context, userID int64, list []*domain.Budget) error {
+	bytes, err := json.Marshal(list)
+	if err != nil {
+		return err
+	}
+	return r.client.Set(ctx, fmt.Sprintf("budgets:%d", userID), bytes, 30*time.Second).Err()
 }
 
-func (r *RedisRepo) InvalidateBudgets(ctx context.Context, userID int64) {
-	r.client.Del(ctx, fmt.Sprintf("budgets:%d", userID))
+func (r *RedisRepo) InvalidateBudgets(ctx context.Context, userID int64) error {
+	return r.client.Del(ctx, fmt.Sprintf("budgets:%d", userID)).Err()
 }

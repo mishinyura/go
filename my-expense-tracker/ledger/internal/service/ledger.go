@@ -23,7 +23,7 @@ func (s *LedgerService) CreateTransaction(ctx context.Context, t *domain.Transac
 	if err == nil && budget != nil {
 		spent, _ := s.pg.GetTotalSpent(t.UserID, t.Category)
 		if spent+t.Amount > budget.LimitAmount {
-			msg := fmt.Sprintf("Бюджет превышен! Лимит: %.0f, Потрачено: %.0f", budget.LimitAmount, spent)
+			msg := fmt.Sprintf("Budget exceeded! Limit: %.0f, Spent: %.0f", budget.LimitAmount, spent)
 			return false, msg
 		}
 	}
@@ -32,24 +32,34 @@ func (s *LedgerService) CreateTransaction(ctx context.Context, t *domain.Transac
 		return false, "DB Error"
 	}
 
-	go s.redis.InvalidateReport(context.Background(), t.UserID)
+	go func() {
+		if err := s.redis.InvalidateReport(context.Background(), t.UserID); err != nil {
+			log.Printf("Redis error (InvalidateReport): %v", err)
+		}
+	}()
 
 	return true, "Saved"
 }
 
 func (s *LedgerService) GetReport(ctx context.Context, userID int64) (map[string]float64, error) {
-	if data, _ := s.redis.GetReport(ctx, userID); data != nil {
-		log.Println("Cache HIT")
+	data, err := s.redis.GetReport(ctx, userID)
+	if err != nil {
+		log.Printf("Redis error: %v", err)
+	} else if data != nil {
 		return data, nil
 	}
 
-	log.Println("Cache MISS")
-	data, err := s.pg.GetReportData(userID)
+	data, err = s.pg.GetReportData(userID)
 	if err != nil {
 		return nil, err
 	}
 
-	go s.redis.SetReport(context.Background(), userID, data)
+	go func() {
+		if err := s.redis.SetReport(context.Background(), userID, data); err != nil {
+			log.Printf("Redis error (SetReport): %v", err)
+		}
+	}()
+
 	return data, nil
 }
 
@@ -57,21 +67,32 @@ func (s *LedgerService) SetBudget(ctx context.Context, userID int64, category st
 	if err := s.pg.SetBudget(userID, category, limit); err != nil {
 		return err
 	}
-	go s.redis.InvalidateBudgets(context.Background(), userID)
+
+	go func() {
+		if err := s.redis.InvalidateBudgets(context.Background(), userID); err != nil {
+			log.Printf("Redis error (InvalidateBudgets): %v", err)
+		}
+	}()
 	return nil
 }
 
 func (s *LedgerService) GetBudgets(ctx context.Context, userID int64) ([]*domain.Budget, error) {
-	if list, _ := s.redis.GetBudgets(ctx, userID); list != nil {
-		log.Println("Budgets HIT")
+	list, err := s.redis.GetBudgets(ctx, userID)
+	if err != nil {
+		log.Printf("Redis error: %v", err)
+	} else if list != nil {
 		return list, nil
 	}
 
-	list, err := s.pg.GetBudgets(userID)
+	list, err = s.pg.GetBudgets(userID)
 	if err != nil {
 		return nil, err
 	}
 
-	go s.redis.SetBudgets(context.Background(), userID, list)
+	go func() {
+		if err := s.redis.SetBudgets(context.Background(), userID, list); err != nil {
+			log.Printf("Redis error (SetBudgets): %v", err)
+		}
+	}()
 	return list, nil
 }

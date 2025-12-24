@@ -32,7 +32,14 @@ func main() {
 	}
 	initDB(db)
 
-	rdb := redis.NewClient(&redis.Options{Addr: cfg.RedisAddr})
+	rdb := redis.NewClient(&redis.Options{
+		Addr:         cfg.RedisAddr,
+		DialTimeout:  10 * time.Second,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		PoolSize:     10,
+		MinIdleConns: 5,
+	})
 
 	pgRepo := repository.NewPostgresRepo(db)
 	redisRepo := repository.NewRedisRepo(rdb)

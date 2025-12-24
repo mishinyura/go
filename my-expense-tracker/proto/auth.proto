@@ -38,7 +38,6 @@ message ValidateResponse {
   bool valid = 2;
 }
 
-// НОВЫЕ СООБЩЕНИЯ
 message LogoutRequest {
   string token = 1;
 }

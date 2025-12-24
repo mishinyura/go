@@ -35,7 +35,14 @@ func main() {
 
 	db.Exec(`CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, email TEXT UNIQUE, password_hash TEXT)`)
 
-	rdb := redis.NewClient(&redis.Options{Addr: cfg.RedisAddr})
+	rdb := redis.NewClient(&redis.Options{
+		Addr:         cfg.RedisAddr,
+		DialTimeout:  10 * time.Second,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		PoolSize:     10,
+		MinIdleConns: 5,
+	})
 
 	pgRepo := repository.NewPostgresRepo(db)
 	redisRepo := repository.NewRedisRepo(rdb)
