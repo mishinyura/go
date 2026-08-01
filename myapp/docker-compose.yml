@@ -1,0 +1,10 @@
+services:
+  app_db:
+    image: postgres:18.1-bookworm
+    container_name: app_db
+    enviroment:
+      - POSGRES_USER=boss
+      - POSTGRES_PASSWORD=boss
+    volumes:
+      - ${PROJECT_ROOT}/out/pgdata:/var/lib/postgresql
+    restart: always
